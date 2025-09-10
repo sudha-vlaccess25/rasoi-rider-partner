@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import emailjs from '@emailjs/browser'; // <-- Add this import
+import Modal from './Modal'; // Import the new Modal component
 
 // Data for sections - makes the JSX cleaner and easier to manage
 const benefits = [
@@ -62,8 +63,13 @@ const App = () => {
     });
     const [formErrors, setFormErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSuccess, setIsSuccess] = useState(false);
+    const [modalState, setModalState] = useState({
+        isOpen: false,
+        type: '', // 'success' or 'error'
+        message: ''
+    });
 
+    const form = useRef();
     // Testimonial slider effect
     useEffect(() => {
         const slideInterval = setInterval(() => {
@@ -127,30 +133,43 @@ const App = () => {
         if (Object.keys(errors).length === 0) {
             setIsSubmitting(true);
 
-            // EmailJS integration
-            emailjs.send(
-                process.env.REACT_APP_EMAILJS_SERVICE_ID,
-                process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
-                {
-                    service_name: formData.serviceName,
-                    contact_person: formData.contactPerson,
-                    phone: formData.phone,
-                    email: formData.email,
-                    city: formData.city,
-                },
-                process.env.REACT_APP_EMAILJS_PUBLIC_KEY
-            ).then(() => {
-                setIsSubmitting(false);
-                setIsSuccess(true);
-            }).catch(() => {
-                setIsSubmitting(false);
-                alert('Failed to send inquiry. Please try again later.');
-            });
+            emailjs.sendForm(
+                import.meta.env.VITE_EMAILJS_SERVICE_ID,
+                import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+                form.current,
+                import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+            )
+            .then((result) => {
+                console.log('SUCCESS!', result.text);
+                setModalState({
+                    isOpen: true,
+                    type: 'success',
+                    message: 'Your inquiry has been received. Our team will get in touch with you within 24 hours.'
+                });
+                // Reset form after successful submission
+                setFormData({ serviceName: '', contactPerson: '', phone: '', email: '', city: '' });
+            }, (error) => {
+                console.log('FAILED...', error.text);
+                setModalState({
+                    isOpen: true,
+                    type: 'error',
+                    message: 'Failed to send your inquiry. Please check your connection and try again.'
+                });
+            })
+            .finally(() => setIsSubmitting(false));
         }
     };
 
     return (
         <>
+            <Modal
+                isOpen={modalState.isOpen}
+                onClose={() => setModalState({ ...modalState, isOpen: false })}
+                title={modalState.type === 'success' ? 'Thank You!' : 'Submission Failed'}
+                type={modalState.type}
+            >
+                <p>{modalState.message}</p>
+            </Modal>
             {/* Styles are included here for single-file convenience */}
             <style>{`
                 html {
@@ -316,53 +335,46 @@ const App = () => {
                                     </div>
                                 </div>
                                 <div className="md:w-1/2 mt-12 md:mt-0">
-                                    {isSuccess ? (
-                                        <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-lg text-center">
-                                            <h4 className="text-xl font-bold text-green-800">Thank You!</h4>
-                                            <p className="text-green-700 mt-2">Your inquiry has been received. Our team will get in touch with you within 24 hours.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-gray-50 p-6 sm:p-8 rounded-2xl shadow-lg">
-                                            <form onSubmit={handleSubmit} noValidate>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                                    <div>
-                                                        <label htmlFor="serviceName" className="font-semibold text-gray-700 block mb-2">Tiffin Service Name</label>
-                                                        <input type="text" id="serviceName" name="serviceName" value={formData.serviceName} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.serviceName ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
-                                                        <p className="text-red-500 text-sm mt-1 h-4">{formErrors.serviceName || ''}</p>
-                                                    </div>
-                                                    <div>
-                                                        <label htmlFor="contactPerson" className="font-semibold text-gray-700 block mb-2">Your Name</label>
-                                                        <input type="text" id="contactPerson" name="contactPerson" value={formData.contactPerson} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.contactPerson ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
-                                                        <p className="text-red-500 text-sm mt-1 h-4">{formErrors.contactPerson || ''}</p>
-                                                    </div>
+                                    <div className="bg-gray-50 p-6 sm:p-8 rounded-2xl shadow-lg">
+                                        <form ref={form} onSubmit={handleSubmit} noValidate>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label htmlFor="serviceName" className="font-semibold text-gray-700 block mb-2">Tiffin Service Name</label>
+                                                    <input type="text" id="serviceName" name="serviceName" value={formData.serviceName} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.serviceName ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
+                                                    <p className="text-red-500 text-sm mt-1 h-4">{formErrors.serviceName || ''}</p>
                                                 </div>
-                                                <div className="mt-6">
-                                                    <label htmlFor="phone" className="font-semibold text-gray-700 block mb-2">Phone Number</label>
-                                                    <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.phone ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
-                                                     <p className="text-red-500 text-sm mt-1 h-4">{formErrors.phone || ''}</p>
+                                                <div>
+                                                    <label htmlFor="contactPerson" className="font-semibold text-gray-700 block mb-2">Your Name</label>
+                                                    <input type="text" id="contactPerson" name="contactPerson" value={formData.contactPerson} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.contactPerson ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
+                                                    <p className="text-red-500 text-sm mt-1 h-4">{formErrors.contactPerson || ''}</p>
                                                 </div>
-                                                <div className="mt-6">
-                                                    <label htmlFor="email" className="font-semibold text-gray-700 block mb-2">Email Address</label>
-                                                    <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
-                                                    <p className="text-red-500 text-sm mt-1 h-4">{formErrors.email || ''}</p>
-                                                </div>
-                                                <div className="mt-6">
-                                                    <label htmlFor="city" className="font-semibold text-gray-700 block mb-2">City / Area of Operation</label>
-                                                    <input type="text" id="city" name="city" placeholder="e.g., Bhubaneswar, Odisha" value={formData.city} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.city ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
-                                                    <p className="text-red-500 text-sm mt-1 h-4">{formErrors.city || ''}</p>
-                                                </div>
-                                                <div className="mt-8">
-                                                    <button type="submit" disabled={isSubmitting} className="w-full bg-orange-500 text-white font-bold py-4 px-6 rounded-lg cta-button flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed">
-                                                        {isSubmitting ? (
-                                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                                        ) : (
-                                                            <span>Submit Inquiry</span>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    )}
+                                            </div>
+                                            <div className="mt-6">
+                                                <label htmlFor="phone" className="font-semibold text-gray-700 block mb-2">Phone Number</label>
+                                                <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.phone ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
+                                                 <p className="text-red-500 text-sm mt-1 h-4">{formErrors.phone || ''}</p>
+                                            </div>
+                                            <div className="mt-6">
+                                                <label htmlFor="email" className="font-semibold text-gray-700 block mb-2">Email Address</label>
+                                                <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
+                                                <p className="text-red-500 text-sm mt-1 h-4">{formErrors.email || ''}</p>
+                                            </div>
+                                            <div className="mt-6">
+                                                <label htmlFor="city" className="font-semibold text-gray-700 block mb-2">City / Area of Operation</label>
+                                                <input type="text" id="city" name="city" placeholder="e.g., Bhubaneswar, Odisha" value={formData.city} onChange={handleInputChange} onBlur={handleBlur} className={`form-input block w-full px-4 py-3 bg-white border ${formErrors.city ? 'border-red-500' : 'border-gray-300'} rounded-lg`} required />
+                                                <p className="text-red-500 text-sm mt-1 h-4">{formErrors.city || ''}</p>
+                                            </div>
+                                            <div className="mt-8">
+                                                <button type="submit" disabled={isSubmitting} className="w-full bg-orange-500 text-white font-bold py-4 px-6 rounded-lg cta-button flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed">
+                                                    {isSubmitting ? (
+                                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                    ) : (
+                                                        <span>Submit Inquiry</span>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -405,4 +417,3 @@ const App = () => {
 };
 
 export default App;
-
