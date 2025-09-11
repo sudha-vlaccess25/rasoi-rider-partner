@@ -10,7 +10,7 @@ const Modal = ({ isOpen, onClose, title, children, type }) => {
     const buttonColor = isSuccess ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600';
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex justify-center items-center z-50 p-4">
             <div className={`bg-white rounded-lg shadow-2xl w-full max-w-md transform transition-all duration-300 ease-out scale-95 animate-scale-in`}>
                 <div className={`p-6 border-b-4 ${borderColor} ${bgColor} rounded-t-lg`}>
                     <h3 className={`text-2xl font-bold ${titleColor}`}>{title}</h3>
