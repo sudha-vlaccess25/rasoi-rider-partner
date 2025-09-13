@@ -134,10 +134,10 @@ const App = () => {
             setIsSubmitting(true);
 
             emailjs.sendForm(
-                import.meta.env.VITE_EMAILJS_SERVICE_ID,
-                import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+                "service_g92k8w9",
+                "template_6qbcmjt",
                 form.current,
-                import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+                "tKfYaAR-_XKPFoHaJ"
             )
             .then((result) => {
                 console.log('SUCCESS!', result.text);
@@ -401,6 +401,7 @@ const App = () => {
                                 </div>
                                 <div>
                                     <h4 className="text-lg font-semibold">Connect With Us</h4>
+                                    <p className="mt-2 text-gray-400">+91 9090168727</p>
                                     <p className="mt-2 text-gray-400">info@rasoirider.com</p>
                                     <p className="text-gray-400">Bhubaneswar, Odisha</p>
                                 </div>
